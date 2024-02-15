@@ -9,6 +9,7 @@ import os
 import pkgutil
 import queue
 import sys
+import threading
 
 
 class ModuleProperties:
@@ -90,6 +91,8 @@ def worker(tasks: 'Queue[str]',
     sys.path = sys_path
     while True:
         mod = tasks.get()
+        if mod == '':
+            return
         try:
             prop = get_package_properties(mod)
         except InspectError as e:
@@ -120,13 +123,14 @@ class ModuleInspect:
     def _start(self) -> None:
         self.tasks: Queue[str] = Queue()
         self.results: Queue[Union[ModuleProperties, str]] = Queue()
-        self.proc = Process(target=worker, args=(self.tasks, self.results, sys.path))
+        self.proc = threading.Thread(target=worker, args=(self.tasks, self.results, sys.path))
         self.proc.start()
         self.counter = 0  # Number of successful roundtrips
 
     def close(self) -> None:
         """Free any resources used."""
-        self.proc.terminate()
+        self.tasks.put('')
+        self.proc.join()
 
     def get_package_properties(self, package_id: str) -> ModuleProperties:
         """Return some properties of a module/package using runtime introspection.

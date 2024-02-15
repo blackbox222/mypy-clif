@@ -121,10 +121,11 @@ def is_c_classmethod(obj: object) -> bool:
 
 
 def is_c_property(obj: object) -> bool:
-    return inspect.isdatadescriptor(obj) and hasattr(obj, 'fget')
+    return inspect.isdatadescriptor(obj) or hasattr(obj, 'fget')
 
 
 def is_c_property_readonly(prop: Any) -> bool:
+    return False
     return prop.fset is None
 
 
